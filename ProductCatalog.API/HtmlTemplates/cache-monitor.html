@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset='utf-8' />
+  <title>Cache Monitor</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: Arial; margin: 0; padding: 16px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+    .card { border: 1px solid #ddd; border-radius: 8px; padding: 12px; }
+    .value { font-size: 24px; font-weight: 700; }
+    .label { color: #666; }
+    .hint { margin-top: 6px; font-size: 12px; color: #475569; line-height: 1.35; }
+    .neutral { border-color: #64748b; background: #f8fafc; }
+    .green { border-color: #16a34a; background: #f0fdf4; }
+    .red { border-color: #dc2626; background: #fef2f2; }
+    .yellow { border-color: #ca8a04; background: #fefce8; }
+    .cyan { border-color: #0891b2; background: #ecfeff; }
+  </style>
+</head>
+<body>
+  <div class='container'>
+    <h2>Product Cache Monitor</h2>
+    <div style='margin-bottom: 12px; color: #334155;'>
+      <strong>Elapsed (sec):</strong> <span id='elapsedSec'>0</span>
+    </div>
+
+    <h3>Required Info</h3>
+    <div class='grid'>
+      <div class='card green'>
+        <div class='label'>Cache Hit Count</div><div id='hit' class='value'>0</div>
+        <div class='hint'>How many GET requests were served directly from cache.</div>
+      </div>
+      <div class='card red'>
+        <div class='label'>Cache Miss Count</div><div id='miss' class='value'>0</div>
+        <div class='hint'>How many GET requests missed cache and loaded from source.</div>
+      </div>
+      <div class='card green'>
+        <div class='label'>Cache Hit Rate %</div><div id='rate' class='value'>0</div>
+        <div class='hint'>Cache success ratio = hits / (hits + misses).</div>
+      </div>
+      <div class='card yellow'>
+        <div class='label'>Cache Wait Count</div><div id='wait' class='value'>0</div>
+        <div class='hint'>How many GET requests waited on lock for the same key.</div>
+      </div>
+      <div class='card cyan'>
+        <div class='label'>Cache Refresh Count</div><div id='refresh' class='value'>0</div>
+        <div class='hint'>How many times cache was refreshed after POST/PUT.</div>
+      </div>
+      <div class='card yellow'>
+        <div class='label'>Cache Remove Count</div><div id='remove' class='value'>0</div>
+        <div class='hint'>How many times a cache entry was explicitly removed.</div>
+      </div>
+      <div class='card red'>
+        <div class='label'>Cache Expired Count</div><div id='expired' class='value'>0</div>
+        <div class='hint'>How many entries were auto-evicted after TTL expiration.</div>
+      </div>
+    </div>
+
+    <h3>Extra Info</h3>
+    <div class='grid'>
+      <div class='card neutral'>
+        <div class='label'>Cache Current Size</div><div id='size' class='value'>0</div>
+        <div class='hint'>How many product entries currently exist in cache.</div>
+      </div>
+      <div class='card green'>
+        <div class='label'>Cache Set Count</div><div id='set' class='value'>0</div>
+        <div class='hint'>How many times a new value was inserted on cache miss path.</div>
+      </div>
+      <div class='card yellow'>
+        <div class='label'>Create Wait Count (SKU)</div><div id='createWait' class='value'>0</div>
+        <div class='hint'>How many Create requests waited on the same SKU lock.</div>
+      </div>
+      <div class='card red'>
+        <div class='label'>Duplicate SKU Count</div><div id='duplicateSku' class='value'>0</div>
+        <div class='hint'>How many Create attempts were rejected due to duplicate SKU.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const startedAt = Date.now();
+
+    function updateClock() {
+      document.getElementById('elapsedSec').textContent = Math.floor((Date.now() - startedAt) / 1000);
+    }
+
+    async function refresh() {
+      const res = await fetch('/api/monitor/cache-stats');
+      const s = await res.json();
+      document.getElementById('size').textContent = s.currentSize;
+      document.getElementById('hit').textContent = s.hitCount;
+      document.getElementById('miss').textContent = s.missCount;
+      document.getElementById('rate').textContent = s.hitRate;
+      document.getElementById('wait').textContent = s.waitCount;
+      document.getElementById('set').textContent = s.setCount;
+      document.getElementById('refresh').textContent = s.refreshCount;
+      document.getElementById('remove').textContent = s.removeCount;
+      document.getElementById('expired').textContent = s.expiredCount;
+      document.getElementById('createWait').textContent = s.createWaitCount;
+      document.getElementById('duplicateSku').textContent = s.duplicateSkuCount;
+    }
+
+    updateClock();
+    refresh();
+    setInterval(updateClock, 1000);
+    setInterval(refresh, 1000);
+  </script>
+</body>
+</html>

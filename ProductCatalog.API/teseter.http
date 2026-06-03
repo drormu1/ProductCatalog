@@ -1,0 +1,94 @@
+@ProductCatalog.API_HostAddress = http://localhost:5088
+
+@host = http://localhost:5088
+@productId = 1
+@secondProductId = 2
+
+### Create new product first (copy returned id and set @productId)
+POST {{host}}/api/products
+Content-Type: application/json
+
+{
+  "sku": "SKU-1",
+  "name": "Product",
+  "price": 199.99
+}
+
+###
+
+### Create duplicate SKU (expected 409 Conflict)
+POST {{host}}/api/products
+Content-Type: application/json
+
+{
+  "sku": "SKU-1",
+  "name": "Product Duplicate",
+  "price": 199.99
+}
+
+###
+
+### First read after product exists (expected cache miss + set)
+GET {{host}}/api/products/{{productId}}
+Accept: application/json
+
+###
+
+### Second read (expected cache hit)
+GET {{host}}/api/products/{{productId}}
+Accept: application/json
+
+###
+
+### Update existing product
+PUT {{host}}/api/products/{{productId}}
+Content-Type: application/json
+
+{
+  "name": "Product Updated",
+  "price": 149.50
+}
+
+###
+
+### Read after update (should return latest value)
+GET {{host}}/api/products/{{productId}}
+Accept: application/json
+
+###
+
+### Create second product after updating product 1
+# @name createSecondProduct
+POST {{host}}/api/products
+Content-Type: application/json
+
+{
+  "sku": "SKU-2",
+  "name": "Product",
+  "price": 249.99
+}
+
+### Set @secondProductId from the POST response id when needed
+
+### Read second product
+GET {{host}}/api/products/{{secondProductId}}
+Accept: application/json
+
+###
+
+### Not found scenario
+GET {{host}}/api/products/999999
+Accept: application/json
+
+###
+
+### Validation scenario (bad request)
+POST {{host}}/api/products
+Content-Type: application/json
+
+{
+  "sku": "",
+  "name": "",
+  "price": -10
+}
+ 

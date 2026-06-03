@@ -1,0 +1,81 @@
+# ==============================
+# .NET / Visual Studio / VS Code
+# ==============================
+
+# Build results
+**/[Bb]in/
+**/[Oo]bj/
+
+# User-specific files
+**/*.user
+**/*.userosscache
+**/*.suo
+**/*.userprefs
+
+# Visual Studio
+.vs/
+
+# Visual Studio Code
+.vscode/
+
+# Rider / JetBrains
+.idea/
+
+# ==================================
+# Test results / coverage / profiling
+# ==================================
+
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage/
+coverage-results/
+**/coverage.cobertura.xml
+**/coverage.opencover.xml
+**/coverage.json
+**/lcov.info
+
+# BenchmarkDotNet
+BenchmarkDotNet.Artifacts/
+
+# ==================================
+# Logs / temp / OS junk
+# ==================================
+
+*.log
+*.tmp
+*.temp
+*.swp
+*~
+
+# Windows
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ==================================
+# NuGet
+# ==================================
+
+# Packages restored by NuGet (keeps the repo clean). If you intentionally commit packages, remove this.
+**/packages/
+
+# NuGet cache files
+*.nupkg
+*.snupkg
+
+# ==================================
+# Local app settings (optional)
+# ==================================
+
+# Uncomment if you want to keep local-only settings out of git.
+# **/appsettings.Development.json
+# **/appsettings.*.local.json
+
+# ==================================
+# Repo-specific: generated runner outputs
+# ==================================
+
+# If your scripts generate output files here, add patterns as needed.
+# runners/output/
