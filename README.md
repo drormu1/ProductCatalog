@@ -17,6 +17,11 @@ dotnet restore ProductCatalog.sln
 ## Build
 פתחו את `ProductCatalog.sln` ב-Visual Studio ובצעו **Build Solution** (`Ctrl+Shift+B`).
 
+## Cache TTL (חשוב לדמו)
+- ה-Cache מוגדר ל-`Sliding TTL` של **10 שניות**.
+- המשמעות: הזמן נספר מחדש בכל גישה לפריט.
+- כדי לראות `Expired` במוניטור, צריך להמתין יותר מ-10 שניות בלי גישה לאותו פריט.
+
 ## הרצה מקומית (מתיקיית runners)
 אחרי שה-Build עבר בהצלחה, הריצו את שני קבצי ה-BAT הבאים (מתיקיית `runners`) בסדר הזה:
 

@@ -2,6 +2,6 @@ namespace ProductCatalog.Infrastructure.Caching
 {
     public class ProductCacheSettings
     {
-    public int TtlSeconds { get; set; } = 4;
+    public int TtlSeconds { get; set; } = 10;
     }
 }
