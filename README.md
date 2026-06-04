@@ -51,3 +51,4 @@ Typical flow I used while testing:
 - Null results are not cached.
 - Stampede prevention is handled with per-key lock + double-check in `GetOrCreateAsync`.
 
+<img src="docs/images/cache-monitor.png" alt="Cache Monitor" width="200" />
