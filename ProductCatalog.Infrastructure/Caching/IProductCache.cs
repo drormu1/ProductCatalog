@@ -1,7 +1,5 @@
 using ProductCatalog.Infrastructure.Models;
 
-using ProductCatalog.Infrastructure.Models;
-
 namespace ProductCatalog.Infrastructure.Caching;
 
 public interface IProductCache

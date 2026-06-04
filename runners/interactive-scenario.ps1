@@ -70,8 +70,8 @@ function Invoke-Api {
 }
 
 function Pause-Step {
-    Write-Host ""
-    Read-Host "Press Enter to continue"
+    # No pause: return directly to the menu.
+    return
 }
 
 function Run-ParallelGet {

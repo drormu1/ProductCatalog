@@ -1,7 +1,5 @@
 using ProductCatalog.Infrastructure.Models;
 
-using ProductCatalog.Infrastructure.Models;
-
 namespace ProductCatalog.Infrastructure.Repositories;
 
 public interface IProductRepository
@@ -15,4 +13,6 @@ public interface IProductRepository
     long GetCreateWaitCount();
 
     long GetDuplicateSkuCount();
+
+    int[] GetProductIds();
 }

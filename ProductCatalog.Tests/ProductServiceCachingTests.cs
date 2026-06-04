@@ -13,6 +13,7 @@ namespace ProductCatalog.Tests
     public partial class ProductServiceCachingTests
     {
         [Fact]
+        // Proves that the second GET is served from cache.
         public async Task GetByIdAsync_ShouldUseCache_OnSecondRead()
         {
             var repository = new FakeProductRepository(new Product { Id = 1, Sku = "SKU-1", Name = "Keyboard", Price = 100 });
@@ -28,6 +29,7 @@ namespace ProductCatalog.Tests
         }
 
         [Fact]
+        // Proves that update refreshes cache with the new value.
         public async Task UpdateAsync_ShouldRefreshCache_AndReturnNewestData()
         {
             var repository = new FakeProductRepository(new Product { Id = 1, Sku = "SKU-1", Name = "Keyboard", Price = 100 });
@@ -48,6 +50,7 @@ namespace ProductCatalog.Tests
         }
 
         [Fact]
+        // Proves create/get/update flow keeps cache data consistent.
         public async Task FullFlow_CreateGetGetUpdateGet_ShouldKeepCacheConsistent()
         {
             var repository = new FakeProductRepository();
@@ -85,6 +88,7 @@ namespace ProductCatalog.Tests
         }
 
         [Fact]
+        // Proves cache entry expires after TTL and data is loaded again.
         public async Task GetByIdAsync_ShouldReloadFromRepository_AfterTtlExpires()
         {
             var repository = new FakeProductRepository(new Product { Id = 1, Sku = "SKU-1", Name = "Keyboard", Price = 100 });
@@ -101,6 +105,7 @@ namespace ProductCatalog.Tests
         }
 
         [Fact]
+        // Proves sliding TTL keeps entry alive when accessed in time.
         public async Task GetByIdAsync_ShouldKeepEntryAlive_WhenAccessedWithinSlidingTtl()
         {
             var repository = new FakeProductRepository(new Product { Id = 1, Sku = "SKU-1", Name = "Keyboard", Price = 100 });
@@ -119,12 +124,29 @@ namespace ProductCatalog.Tests
             Assert.Equal(1, repository.GetByIdCalls);
         }
 
+        [Fact]
+        // Proves many parallel GETs for same id call repository only once.
+        public async Task GetByIdAsync_WithParallelRequests_ShouldPreventStampede()
+        {
+            var repository = new FakeProductRepository(new Product { Id = 1, Sku = "SKU-1", Name = "Keyboard", Price = 100 });
+            var cache = CreateCache();
+            var service = CreateService(repository, cache);
+
+            var tasks = Enumerable.Range(0, 20)
+                .Select(_ => Task.Run(() => service.GetByIdAsync(1)));
+
+            var results = await Task.WhenAll(tasks);
+
+            Assert.All(results, item => Assert.NotNull(item));
+            Assert.Equal(1, repository.GetByIdCalls);
+        }
+
         private static IProductCache CreateCache(int ttlSeconds = 4)
         {
             var memoryCache = new MemoryCache(new MemoryCacheOptions());
-            var settings = Options.Create(new ProductCacheSettings { TtlSeconds = ttlSeconds });
-            var logger = LoggerFactory.Create(_ => { }).CreateLogger<MemoryProductCache>();
-            return new MemoryProductCache(memoryCache, settings, logger);
+            var settings = Options.Create(new CacheSettings { TtlSeconds = ttlSeconds });
+            var logger = LoggerFactory.Create(_ => { }).CreateLogger<ProductMemoryCache>();
+            return new ProductMemoryCache(memoryCache, settings, logger);
         }
 
         private static ProductService CreateService(IProductRepository repository, IProductCache cache)

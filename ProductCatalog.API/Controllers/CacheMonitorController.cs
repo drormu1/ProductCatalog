@@ -31,6 +31,7 @@ public class CacheMonitorController : ControllerBase
         var stats = _cache.GetStats();
         stats.CreateWaitCount = _repository.GetCreateWaitCount();
         stats.DuplicateSkuCount = _repository.GetDuplicateSkuCount();
+        stats.RepositoryProductIds = _repository.GetProductIds();
         return Ok(stats);
     }
 

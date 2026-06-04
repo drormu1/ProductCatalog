@@ -12,6 +12,7 @@ public class CacheStats
     public long CreateWaitCount { get; set; }
     public long DuplicateSkuCount { get; set; }
     public int CurrentSize { get; set; }
+    public int[] RepositoryProductIds { get; set; } = new int[0];
 
     public double HitRate => HitCount + MissCount == 0
         ? 0

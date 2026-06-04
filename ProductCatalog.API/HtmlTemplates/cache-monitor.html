@@ -17,6 +17,15 @@
     .red { border-color: #dc2626; background: #fef2f2; }
     .yellow { border-color: #ca8a04; background: #fefce8; }
     .cyan { border-color: #0891b2; background: #ecfeff; }
+    .repo-strip { margin: 0 0 14px 0; border: 1px solid #94a3b8; border-radius: 10px; background: #f8fafc; padding: 10px 12px; }
+    .repo-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .repo-title { color: #0f172a; font-weight: 700; }
+    .repo-count { color: #334155; font-weight: 600; }
+    .repo-bar { width: 100%; height: 10px; border-radius: 999px; background: #e2e8f0; overflow: hidden; margin-top: 8px; }
+    .repo-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #22c55e, #14b8a6); transition: width 200ms ease; }
+    .repo-chips { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .repo-chip { background: #e2e8f0; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 600; }
+    .repo-empty { margin-top: 8px; color: #64748b; font-size: 12px; }
   </style>
 </head>
 <body>
@@ -24,6 +33,20 @@
     <h2>Product Cache Monitor</h2>
     <div style='margin-bottom: 12px; color: #334155;'>
       <strong>Elapsed (sec):</strong> <span id='elapsedSec'>0</span>
+      <span style='margin-left: 12px; color: #64748b; font-size: 12px;'>
+        Cache entries expire after 10 seconds of inactivity.
+      </span>
+    </div>
+    <div class='repo-strip'>
+      <div class='repo-top'>
+        <div class='repo-title'>Repository Product IDs</div>
+        <div class='repo-count'>Count: <span id='repoCount'>0</span></div>
+      </div>
+      <div class='repo-bar'>
+        <div id='repoBarFill' class='repo-bar-fill'></div>
+      </div>
+      <div id='repoIds' class='repo-chips'></div>
+      <div id='repoEmpty' class='repo-empty'>No products in repository.</div>
     </div>
 
     <h3>Required Info</h3>
@@ -47,10 +70,6 @@
       <div class='card cyan'>
         <div class='label'>Cache Refresh Count</div><div id='refresh' class='value'>0</div>
         <div class='hint'>How many times cache was refreshed after POST/PUT.</div>
-      </div>
-      <div class='card yellow'>
-        <div class='label'>Cache Remove Count</div><div id='remove' class='value'>0</div>
-        <div class='hint'>How many times a cache entry was explicitly removed.</div>
       </div>
       <div class='card red'>
         <div class='label'>Cache Expired Count</div><div id='expired' class='value'>0</div>
@@ -86,6 +105,33 @@
       document.getElementById('elapsedSec').textContent = Math.floor((Date.now() - startedAt) / 1000);
     }
 
+    function renderRepositoryIds(ids) {
+      const safeIds = Array.isArray(ids) ? ids : [];
+      const chips = document.getElementById('repoIds');
+      const empty = document.getElementById('repoEmpty');
+      const count = document.getElementById('repoCount');
+      const barFill = document.getElementById('repoBarFill');
+
+      count.textContent = safeIds.length;
+      chips.innerHTML = '';
+
+      if (safeIds.length === 0) {
+        empty.style.display = 'block';
+      } else {
+        empty.style.display = 'none';
+        for (const id of safeIds) {
+          const chip = document.createElement('span');
+          chip.className = 'repo-chip';
+          chip.textContent = id;
+          chips.appendChild(chip);
+        }
+      }
+
+      // Visual scale: 20 IDs fills the bar; values above are clamped.
+      const fillPercent = Math.min((safeIds.length / 20) * 100, 100);
+      barFill.style.width = `${fillPercent}%`;
+    }
+
     async function refresh() {
       const res = await fetch('/api/monitor/cache-stats');
       const s = await res.json();
@@ -96,10 +142,10 @@
       document.getElementById('wait').textContent = s.waitCount;
       document.getElementById('set').textContent = s.setCount;
       document.getElementById('refresh').textContent = s.refreshCount;
-      document.getElementById('remove').textContent = s.removeCount;
       document.getElementById('expired').textContent = s.expiredCount;
       document.getElementById('createWait').textContent = s.createWaitCount;
       document.getElementById('duplicateSku').textContent = s.duplicateSkuCount;
+      renderRepositoryIds(s.repositoryProductIds);
     }
 
     updateClock();

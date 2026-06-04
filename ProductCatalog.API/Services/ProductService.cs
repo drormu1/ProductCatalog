@@ -1,5 +1,4 @@
 using ProductCatalog.API.Contracts;
-using ProductCatalog.API.Contracts;
 using Microsoft.Extensions.Logging;
 using ProductCatalog.Infrastructure.Caching;
 using ProductCatalog.Infrastructure.Logging;
@@ -23,23 +22,17 @@ public class ProductService : IProductService
 
     public async Task<ProductResponse?> GetByIdAsync(int id)
     {
-        _logger.LogInformation("{Color}[PRODUCT GET REQUEST]{Reset} id={Id}", LogColors.Cyan, LogColors.Reset, id);
+        LogGetRequest(id);
 
         var product = await _cache.GetOrCreateAsync(id, () => _repository.GetByIdAsync(id));
 
         if (product is null)
         {
-            _logger.LogInformation("{Color}[PRODUCT GET NOT FOUND]{Reset} id={Id}", LogColors.Yellow, LogColors.Reset, id);
+            LogGetNotFound(id);
             return null;
         }
 
-        _logger.LogInformation(
-            "{Color}[PRODUCT GET SUCCESS]{Reset} displayName={DisplayName} id={Id} name={Name}",
-            LogColors.Green,
-            LogColors.Reset,
-            GetDisplayName(product),
-            product.Id,
-            product.Name);
+        LogGetSuccess(product);
         return ToResponse(product);
     }
 
@@ -52,14 +45,8 @@ public class ProductService : IProductService
             Price = request.Price
         });
 
-        _cache.Set(created);
-        _logger.LogInformation(
-            "{Color}[PRODUCT CREATED]{Reset} displayName={DisplayName} id={Id} name={Name}",
-            LogColors.Magenta,
-            LogColors.Reset,
-            GetDisplayName(created),
-            created.Id,
-            created.Name);
+        RefreshCache(created);
+        LogCreated(created);
         return ToResponse(created);
     }
 
@@ -74,23 +61,57 @@ public class ProductService : IProductService
 
         if (updated is null)
         {
-            _cache.Remove(id);
-            _logger.LogInformation("{Color}[PRODUCT UPDATE-NOT FOUND]{Reset} id={Id}", LogColors.Yellow, LogColors.Reset, id);
+            RemoveFromCache(id);
+            LogUpdateNotFound(id);
             return null;
         }
 
-        _cache.Set(updated);
-        _logger.LogInformation(
-            "{Color}[PRODUCT UPDATED]{Reset} displayName={DisplayName} id={Id} name={Name}",
-            LogColors.Magenta,
-            LogColors.Reset,
-            GetDisplayName(updated),
-            updated.Id,
-            updated.Name);
+        RefreshCache(updated);
+        LogUpdated(updated);
         return ToResponse(updated);
     }
 
     private static string GetDisplayName(Product product) => $"{product.Name} #{product.Id}";
+
+    private void RefreshCache(Product product) => _cache.Set(product);
+
+    private void RemoveFromCache(int id) => _cache.Remove(id);
+
+    private void LogGetRequest(int id) =>
+        _logger.LogInformation("{Color}[PRODUCT GET REQUEST]{Reset} id={Id}", LogColors.Cyan, LogColors.Reset, id);
+
+    private void LogGetNotFound(int id) =>
+        _logger.LogInformation("{Color}[PRODUCT GET NOT FOUND]{Reset} id={Id}", LogColors.Yellow, LogColors.Reset, id);
+
+    private void LogGetSuccess(Product product) =>
+        _logger.LogInformation(
+            "{Color}[PRODUCT GET SUCCESS]{Reset} displayName={DisplayName} id={Id} name={Name}",
+            LogColors.Green,
+            LogColors.Reset,
+            GetDisplayName(product),
+            product.Id,
+            product.Name);
+
+    private void LogCreated(Product product) =>
+        _logger.LogInformation(
+            "{Color}[PRODUCT CREATED]{Reset} displayName={DisplayName} id={Id} name={Name}",
+            LogColors.Magenta,
+            LogColors.Reset,
+            GetDisplayName(product),
+            product.Id,
+            product.Name);
+
+    private void LogUpdateNotFound(int id) =>
+        _logger.LogInformation("{Color}[PRODUCT UPDATE-NOT FOUND]{Reset} id={Id}", LogColors.Yellow, LogColors.Reset, id);
+
+    private void LogUpdated(Product product) =>
+        _logger.LogInformation(
+            "{Color}[PRODUCT UPDATED]{Reset} displayName={DisplayName} id={Id} name={Name}",
+            LogColors.Magenta,
+            LogColors.Reset,
+            GetDisplayName(product),
+            product.Id,
+            product.Name);
 
     private static ProductResponse ToResponse(Product product) => new()
     {

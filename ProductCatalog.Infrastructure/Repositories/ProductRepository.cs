@@ -3,11 +3,10 @@ using ProductCatalog.Infrastructure.Models;
 
 namespace ProductCatalog.Infrastructure.Repositories;
 
-public class InMemoryProductRepository : IProductRepository
+public class ProductRepository : IProductRepository
 {
     private readonly ConcurrentDictionary<int, Product> _products = new();
-    private readonly ConcurrentDictionary<string, int> _skuToId = new(StringComparer.OrdinalIgnoreCase);
-    private readonly ConcurrentDictionary<string, SemaphoreSlim> _skuLocks = new(StringComparer.OrdinalIgnoreCase);
+    private readonly SemaphoreSlim _createGate = new(1, 1);
     private int _nextId;
     private long _createWaitCount;
     private long _duplicateSkuCount;
@@ -22,17 +21,17 @@ public class InMemoryProductRepository : IProductRepository
         ArgumentNullException.ThrowIfNull(product);
 
         var normalizedSku = NormalizeSku(product.Sku);
-        var gate = _skuLocks.GetOrAdd(normalizedSku, _ => new SemaphoreSlim(1, 1));
 
-        if (!gate.Wait(0))
+        // If the gate is not available, we wait for it.     
+        if (!_createGate.Wait(0))
         {
             Interlocked.Increment(ref _createWaitCount);
-            gate.Wait();
+            _createGate.Wait();
         }
-
+       
         try
         {
-            if (_skuToId.ContainsKey(normalizedSku))
+            if (ContainsSku(normalizedSku))
             {
                 Interlocked.Increment(ref _duplicateSkuCount);
                 throw new DuplicateSkuException(normalizedSku);
@@ -43,12 +42,12 @@ public class InMemoryProductRepository : IProductRepository
             created.Sku = normalizedSku;
 
             _products[created.Id] = created;
-            _skuToId[normalizedSku] = created.Id;
             return Task.FromResult(Copy(created));
         }
         finally
         {
-            gate.Release();
+            // Release the gate, allowing another request to create a product.
+            _createGate.Release();
         }
     }
 
@@ -65,6 +64,7 @@ public class InMemoryProductRepository : IProductRepository
         var updated = new Product
         {
             Id = current.Id,
+            // SKU stays the same on update.
             Sku = current.Sku,
             Name = product.Name,
             Price = product.Price
@@ -78,6 +78,14 @@ public class InMemoryProductRepository : IProductRepository
 
     public long GetDuplicateSkuCount() => Interlocked.Read(ref _duplicateSkuCount);
 
+    public int[] GetProductIds()
+    {
+        var ids = new int[_products.Count];
+        _products.Keys.CopyTo(ids, 0);
+        Array.Sort(ids);
+        return ids;
+    }
+
     private static string NormalizeSku(string sku)
     {
         var normalized = sku?.Trim() ?? string.Empty;
@@ -88,6 +96,19 @@ public class InMemoryProductRepository : IProductRepository
         }
 
         return normalized.ToUpperInvariant();
+    }
+    // Checks if the SKU already exists in the current store.
+    private bool ContainsSku(string normalizedSku)
+    {
+        foreach (var existing in _products.Values)
+        {
+            if (string.Equals(existing.Sku, normalizedSku, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static Product Copy(Product product) => new()

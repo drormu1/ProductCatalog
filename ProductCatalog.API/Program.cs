@@ -30,9 +30,9 @@ builder.Services.AddMemoryCache(options =>
 {
     options.ExpirationScanFrequency = TimeSpan.FromSeconds(1);
 });
-builder.Services.Configure<ProductCacheSettings>(builder.Configuration.GetSection("CacheSettings"));
-builder.Services.AddSingleton<IProductRepository, InMemoryProductRepository>();
-builder.Services.AddSingleton<IProductCache, MemoryProductCache>();
+builder.Services.Configure<CacheSettings>(builder.Configuration.GetSection("CacheSettings"));
+builder.Services.AddSingleton<IProductRepository, ProductRepository>();
+builder.Services.AddSingleton<IProductCache, ProductMemoryCache>();
 builder.Services.AddScoped<IProductService, ProductService>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
